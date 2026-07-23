@@ -7,3 +7,160 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+body {
+    font-family: var(--font-sans);
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #5f3232;
+    overflow: hidden;
+}
+
+main {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+}
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    width: 260px;
+    padding: 15px 15px 0 15px;
+    color: white;
+    border: 2px solid #0dabc7;
+    border-radius: 15px;
+    background-color: #000000;
+}
+
+.logo-section {
+    display: flex;
+    flex-direction: row; 
+    gap: 12px; 
+    padding: 0 3px 0 0;
+    margin-bottom: 20px;
+}
+
+.logo-icon {
+    width: 25px;
+    height: 25px;
+    color: #1099a3; 
+    flex-shrink: 0;
+}
+
+.logo-section h2 {
+   font-size: 1.1rem;
+    font-weight: bold;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.btns-sidebar {
+    display: flex;
+    flex-direction: column; 
+    gap: 8px; 
+    margin-bottom: 25px;
+}
+
+.btn {
+    display: flex; 
+    align-items: center;
+    gap: 10px;
+    background-color: transparent;
+    color: #ececec;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 15px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    text-align: left;
+}
+
+.btn:hover {
+    background-color: #2193df;
+}
+
+.btn svg {
+    width: 28px;
+    height: 23px;
+}
+
+.recents {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: auto;
+}
+
+.tiettle-recents h3 {
+    font-size: 1.1rem;
+    color: #e2e2e2;
+    margin-bottom: 10px;
+    padding-left: 10px;
+}
+
+.recent-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.recent-list li {
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #d1d5db;
+}
+
+.recent-list li:hover {
+    background-color: #13afdf;
+}
+
+.account {
+    margin-top: auto;
+    padding: 3px 0;
+    border-top: 1.5px solid #0dabc7;
+}
+
+.account-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 11px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.account-container:hover {
+    background-color: #2f2f2f;
+}
+
+.img-account img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.name-status h4 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.name-status h5 {
+    margin: 0;
+    font-size: 0.75rem;
+    color: #8e8e8e;
+    font-weight: normal;
+}
+
+section {
+    flex: 1; 
+    background-color: #beb2b2;
+    border-radius: 15px;
+}
+
