@@ -1,23 +1,38 @@
-<article class="chat-area">
+<div class="chat-area">
     <header class="chat-header">
         <h1>All AI Responses</h1>
     </header>
 
     <div class="chat-messages">
+
+
+
+
         <div class="message-box ai-message">
             <h2 class="sender-name ai-name">GPT-4</h2>
             <p>This is a response from GPT-4. Hello there!</p>
         </div>
 
-        <div class="message-box user-message">
+
+
+        <div class="message-box user-message"
+        >
             <h2 class="sender-name user-name">You</h2>
             <p>Hello! Can you help me write some HTML and CSS code?</p>
         </div>
 
-        <div class="message-box ai-message">
+
+
+
+
+        <div class="message-box ai-message"   >
             <h2 class="sender-name ai-name">Gemini</h2>
             <p>Of course! I can help you with that. What do you need exactly?</p>
         </div>
+
+
+
+
     </div>
     
     <div class="chat-input-container">
@@ -37,7 +52,35 @@
             </svg>
         </button>
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     </div>
-</article>
+</div>
 
 
