@@ -2,9 +2,11 @@
 @section('content')
 
     <main> 
-        <x-sidebar /> 
+        <x-sidebar :chats="$chats" />
 
-        <x-chat />
+        <x-chat
+            :chat="$chat" 
+            :messages="$messages"/>
     
     </main> 
 
