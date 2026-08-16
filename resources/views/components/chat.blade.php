@@ -1,29 +1,14 @@
-<<<<<<< Updated upstream
 <div class="chat-area">
-=======
-<article class="chat-area">
 
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     <header class="chat-header">
         <h1>All AI Responses</h1>
     </header>
 
     <div class="chat-messages">
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-
-
-
-
         <div class="message-box ai-message">
             <h2 class="sender-name ai-name">GPT-4</h2>
             <p>This is a response from GPT-4. Hello there!</p>
         </div>
-
-
 
         <div class="message-box user-message"
         >
@@ -31,20 +16,11 @@
             <p>Hello! Can you help me write some HTML and CSS code?</p>
         </div>
 
-
-
-
-
         <div class="message-box ai-message"   >
             <h2 class="sender-name ai-name">Gemini</h2>
             <p>Of course! I can help you with that. What do you need exactly?</p>
         </div>
 
-
-
-
-=======
-
         @foreach($messages as $message)
 
             @if($message->role === 'user')
@@ -80,11 +56,7 @@
             @endif
 
         @endforeach
-
->>>>>>> Stashed changes
     </div>
-
-=======
 
         @foreach($messages as $message)
 
@@ -124,7 +96,6 @@
 
     </div>
 
->>>>>>> Stashed changes
     <form
         action="{{ route('messages.store', $chat) }}"
         method="POST"
@@ -164,7 +135,6 @@
             class="icon-btn send-btn"
             title="Send Message"
         >
-
             <svg xmlns="http://www.w3.org/2000/svg"
                  fill="none"
                  viewBox="0 0 24 24"
@@ -176,47 +146,6 @@
                       d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
 
             </svg>
-
         </button>
-
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     </div>
 </div>
-
-=======
-    </form>
->>>>>>> Stashed changes
-=======
-    </form>
->>>>>>> Stashed changes
-
-</article>
