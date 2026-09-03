@@ -47,8 +47,6 @@ main {
     margin-bottom: 20px;
 }
 
-
-
 .logo-icon {
     width: 25px;
     height: 25px;
@@ -176,7 +174,7 @@ section {
 
 .chat-area {
 
-    flex: 1;
+    flex: auto;
     display: flex;
     height: 100%;
     flex-direction: column;

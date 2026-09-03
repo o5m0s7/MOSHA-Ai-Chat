@@ -15,12 +15,18 @@ class GroqService implements AIService
 
     public function sendMessage(string $message): string
     {
-        $response = Http::withToken(config('services.groq.api_key'))
+        $apiKey = config('services.groq.api_key');
+
+        if (! is_string($apiKey) || trim($apiKey) === '') {
+            throw new Exception('Groq API key is missing.');
+        }
+
+        $response = Http::withToken($apiKey)
             ->acceptJson()
             ->contentType('application/json')
             ->timeout(30)
             ->post('https://api.groq.com/openai/v1/chat/completions', [
-                'model' => 'llama-3.3-70b-versatile',
+                'model' => 'groq/compound-mini',
                 'messages' => [
                     [
                         'role' => 'user',
@@ -30,13 +36,15 @@ class GroqService implements AIService
             ]);
 
         if (! $response->successful()) {
-            throw new Exception($response->body());
+            throw new Exception(
+                'Groq API error [' . $response->status() . ']: ' . $response->body()
+            );
         }
 
         $content = $response->json('choices.0.message.content');
 
-        if (!$content) {
-            throw new Exception('Invalid response received from Groq.');
+        if (! is_string($content) || trim($content) === '') {
+            throw new Exception('Invalid or empty response received from Groq.');
         }
 
         return trim($content);
