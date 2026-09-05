@@ -35,7 +35,9 @@
                     </h2>
 
                     <div class="message-content">
+                    
                         {!! $markdownRenderer->render($message->content) !!}
+                    
                     </div>
 
                 </div>

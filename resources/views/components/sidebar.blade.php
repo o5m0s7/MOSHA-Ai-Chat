@@ -89,7 +89,7 @@
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     stroke-width="2"
-                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a1 1 0 00-1 1z"
                 />
             </svg>
 
@@ -137,18 +137,52 @@
 
                 @forelse($chats as $recentChat)
 
-                    <li>
+                    <li class="recent-item">
+
                         <a
                             href="{{ route('chats.show', $recentChat) }}"
                             class="{{ isset($chat) && $chat->id === $recentChat->id ? 'active-chat' : '' }}"
                         >
                             {{ $recentChat->title }}
                         </a>
+
+                        {{-- Delete Chat --}}
+                        <form
+                            action="{{ route('chats.destroy', $recentChat) }}"
+                            method="POST"
+                            class="delete-chat-form"
+                            onsubmit="return confirm('Are you sure you want to delete this chat?');"
+                        >
+                            @csrf
+                            @method('DELETE')
+
+                            <button
+                                type="submit"
+                                class="delete-chat-btn"
+                                title="Delete chat"
+                                aria-label="Delete chat"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M6 7h12M10 11v6M14 11v6M9 7l1-2h4l1 2m-7 0v12a2 2 0 002 2h4a2 2 0 002-2V7"
+                                    />
+                                </svg>
+                            </button>
+                        </form>
+
                     </li>
 
                 @empty
 
-                    <li>
+                    <li class="no-chats">
                         <span>No chats yet.</span>
                     </li>
 
@@ -174,7 +208,6 @@
                 >
 
             </div>
-
 
             <div class="name-status">
 
