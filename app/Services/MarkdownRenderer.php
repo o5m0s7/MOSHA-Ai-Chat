@@ -19,10 +19,17 @@ class MarkdownRenderer
 
     public function render(string $markdown): string
     {
+        // Normalize encoded spaces that some AI responses may contain
+        $markdown = preg_replace(
+            '/&#x?20;|&#32;/i',
+            ' ',
+            $markdown
+        );
+    
         $html = $this->converter
             ->convert($markdown)
             ->getContent();
-
+    
         return $this->addCodeBlockFeatures($html);
     }
 

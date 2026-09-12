@@ -158,10 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             data.messages.forEach((message) => {
 
-                addAIMessage(
-                    message.provider || 'AI',
-                    message.html
-                );
+                addAIMessage(message);
 
             });
 
@@ -190,10 +187,13 @@ document.addEventListener('DOMContentLoaded', () => {
             thinkingMessage.remove();
 
 
-            addAIMessage(
-                'MOSHA AI',
-                '<p>Sorry, something went wrong while processing your message.</p>'
-            );
+            addAIMessage({
+                provider: 'MOSHA AI',
+                status: 'completed',
+                html: '<p>Sorry, something went wrong while processing your message.</p>',
+                id: null,
+                error: null,
+            });
 
 
             scrollToBottom();
@@ -284,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // AI Message
     // ========================================
 
-    function addAIMessage(providerName, html) {
+    function addAIMessage(message) {
 
         const messageBox =
             document.createElement('div');
@@ -303,7 +303,8 @@ document.addEventListener('DOMContentLoaded', () => {
             'ai-name'
         );
 
-        sender.textContent = providerName;
+        sender.textContent =
+            message.provider || 'AI';
 
 
         const messageContent =
@@ -313,24 +314,75 @@ document.addEventListener('DOMContentLoaded', () => {
             'message-content'
         );
 
-        /*
-         * The HTML was already generated on the server
-         * using MarkdownRenderer.
-         *
-         * This is what restores:
-         * - Markdown
-         * - Code blocks
-         * - Copy button
-         */
 
-        messageContent.innerHTML = html;
+        // Failed provider
+        if (message.status === 'failed') {
+
+            const errorContainer =
+                document.createElement('div');
+
+            errorContainer.classList.add(
+                'message-error'
+            );
+
+
+            const errorText =
+                document.createElement('p');
+
+            errorText.textContent =
+                message.error ||
+                'This provider is currently unavailable.';
+
+
+            const retryButton =
+                document.createElement('button');
+
+            retryButton.type = 'button';
+
+            retryButton.classList.add(
+                'retry-btn'
+            );
+
+            retryButton.dataset.messageId =
+                message.id;
+
+            retryButton.textContent =
+                'Retry';
+
+
+            errorContainer.appendChild(
+                errorText
+            );
+
+            errorContainer.appendChild(
+                retryButton
+            );
+
+
+            messageContent.appendChild(
+                errorContainer
+            );
+
+        }
+
+        // Successful provider
+        else {
+
+            messageContent.innerHTML =
+                message.html || '';
+
+        }
 
 
         messageBox.appendChild(sender);
-        messageBox.appendChild(messageContent);
 
-        messagesContainer.appendChild(messageBox);
+        messageBox.appendChild(
+            messageContent
+        );
 
+        messagesContainer.appendChild(
+            messageBox
+        );
     }
 
 
@@ -396,3 +448,98 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 });
+
+document.addEventListener('click', async (event) => {
+    const button = event.target.closest('.retry-btn');
+
+    if (!button) return;
+
+    const messageId = button.dataset.messageId;
+
+    if (!messageId) return;
+
+    button.disabled = true;
+    button.textContent = 'Retrying...';
+
+    try {
+        const response = await fetch(
+            `/messages/${messageId}/retry`,
+            {
+                method: 'POST',
+
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document
+                        .querySelector('meta[name="csrf-token"]')
+                        ?.getAttribute('content'),
+                },
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.message || 'Retry failed.'
+            );
+        }
+
+        const message = data.message;
+
+        const messageBox = button.closest('.message-box');
+
+        if (!messageBox) {
+            return;
+        }
+
+        const messageContent =
+            messageBox.querySelector('.message-content');
+
+        if (!messageContent) {
+            return;
+        }
+
+        if (
+            data.success &&
+            message.status === 'completed'
+        ) {
+            messageContent.innerHTML = message.html;
+
+            button.remove();
+
+            return;
+        }
+
+        messageContent.innerHTML = `
+            <div class="message-error">
+                <p>${escapeHtml(
+                    message.error ||
+                    'This provider is currently unavailable.'
+                )}</p>
+
+                <button
+                    type="button"
+                    class="retry-btn"
+                    data-message-id="${message.id}"
+                >
+                    Retry
+                </button>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Retry error:', error);
+
+        button.disabled = false;
+        button.textContent = 'Retry';
+    }
+});
+
+function escapeHtml(value) {
+    const div = document.createElement('div');
+
+    div.textContent = value ?? '';
+
+    return div.innerHTML;
+}
+

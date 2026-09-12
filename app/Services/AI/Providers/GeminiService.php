@@ -5,6 +5,7 @@ namespace App\Services\AI\Providers;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use App\Services\AI\Contracts\AIService;
+use App\Services\AI\AIPrompt;
 
 class GeminiService implements AIService
 {
@@ -13,12 +14,38 @@ class GeminiService implements AIService
         return 2;
     }
 
-    public function sendMessage(string $message): string
+    public function sendMessage(array $messages): string
     {
         $apiKey = config('services.gemini.api_key');
 
         if (! is_string($apiKey) || trim($apiKey) === '') {
             throw new Exception('Gemini API key is missing.');
+        }
+
+        /*
+         * Gemini keeps the system instruction separate
+         * from the conversation contents.
+         */
+        $contents = [];
+
+        foreach ($messages as $message) {
+
+            // Ignore MOSHA's internal system message here.
+            if (($message['role'] ?? '') === 'system') {
+                continue;
+            }
+
+            $contents[] = [
+                'role' => ($message['role'] ?? 'user') === 'assistant'
+                    ? 'model'
+                    : 'user',
+
+                'parts' => [
+                    [
+                        'text' => $message['content'] ?? '',
+                    ],
+                ],
+            ];
         }
 
         $response = Http::withHeaders([
@@ -30,16 +57,15 @@ class GeminiService implements AIService
             ->post(
                 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',
                 [
-                    'contents' => [
-                        [
-                            'role' => 'user',
-                            'parts' => [
-                                [
-                                    'text' => $message,
-                                ],
+                    'systemInstruction' => [
+                        'parts' => [
+                            [
+                                'text' => AIPrompt::system(),
                             ],
                         ],
                     ],
+
+                    'contents' => $contents,
                 ]
             );
 

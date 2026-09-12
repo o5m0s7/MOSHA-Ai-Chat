@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Chat;
+use App\Models\Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -17,56 +18,114 @@ class MessageController extends Controller
         AIManager $aiManager,
         MarkdownRenderer $markdownRenderer
     ) {
-        // Make sure this chat belongs to the logged-in user
         if ($chat->user_id !== Auth::id()) {
             abort(403, 'Unauthorized action.');
         }
 
-        // Validate the message
         $validated = $request->validate([
             'content' => ['required', 'string'],
         ]);
 
         $userId = Auth::id();
 
-        // Get responses from AI providers
-        $responses = $aiManager->send($validated['content']);
+        /*
+        |--------------------------------------------------------------------------
+        | 1. Save the user's message first
+        |--------------------------------------------------------------------------
+        */
+
+        $userMessage = $chat->messages()->create([
+            'user_id' => $userId,
+            'role' => 'user',
+            'status' => 'completed',
+            'content' => $validated['content'],
+            'provider_id' => null,
+            'parent_message_id' => null,
+            'error' => null,
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. Build conversation history
+        |--------------------------------------------------------------------------
+        */
+
+        $previousMessages = $chat->messages()
+            ->orderBy('id')
+            ->get([
+                'role',
+                'content',
+                'provider_id',
+            ]);
+
+        $conversation = $previousMessages
+            ->map(function ($message) {
+                return [
+                    'role' => $message->role === 'assistant'
+                        ? 'assistant'
+                        : 'user',
+
+                    'content' => $message->content,
+
+                    'provider_id' => $message->provider_id,
+                ];
+            })
+            ->values()
+            ->all();
+
+        /*
+        |--------------------------------------------------------------------------
+        | 3. Ask all AI providers
+        |--------------------------------------------------------------------------
+        */
+
+        $responses = $aiManager->send($conversation);
+
+        /*
+        |--------------------------------------------------------------------------
+        | 4. Save provider responses
+        |--------------------------------------------------------------------------
+        */
 
         $newMessages = [];
 
         DB::transaction(function () use (
             $chat,
-            $validated,
             $responses,
             $userId,
+            $userMessage,
+            $validated,
             &$newMessages
         ) {
-
-            // Save user's message
-            $userMessage = $chat->messages()->create([
-                'user_id' => $userId,
-                'role' => 'user',
-                'content' => $validated['content'],
-            ]);
-
             $newMessages[] = $userMessage;
 
-            // Save AI responses
             foreach ($responses as $response) {
-
                 $aiMessage = $chat->messages()->create([
-                    'user_id'     => $userId,
+                    'user_id' => $userId,
                     'provider_id' => $response['provider_id'],
-                    'role'        => 'assistant',
-                    'content'     => $response['content'],
+                    'parent_message_id' => $userMessage->id,
+
+                    'role' => 'assistant',
+
+                    'status' => $response['success']
+                        ? 'completed'
+                        : 'failed',
+
+                    'content' => $response['content'] ?? '',
+
+                    'error' => $response['error'] ?? null,
                 ]);
 
                 $newMessages[] = $aiMessage;
             }
 
-            // Set chat title from first user message
-            if ($chat->title === 'New Chat') {
+            /*
+            |--------------------------------------------------------------------------
+            | First user message becomes chat title
+            |--------------------------------------------------------------------------
+            */
 
+            if ($chat->title === 'New Chat') {
                 $title = trim($validated['content']);
 
                 if (mb_strlen($title) > 50) {
@@ -79,24 +138,36 @@ class MessageController extends Controller
             }
         });
 
-        // Return JSON for JavaScript/fetch requests
+        /*
+        |--------------------------------------------------------------------------
+        | 5. JSON response for AJAX requests
+        |--------------------------------------------------------------------------
+        */
+
         if ($request->expectsJson()) {
-
             $messages = collect($newMessages)
-                ->filter(function ($message) {
-                    return $message->role === 'assistant';
-                })
+                ->filter(fn ($message) => $message->role === 'assistant')
                 ->map(function ($message) use ($markdownRenderer) {
-
-                    // Load provider for this message
                     $message->loadMissing('provider');
 
                     return [
                         'id' => $message->id,
+
                         'role' => $message->role,
+
+                        'provider_id' => $message->provider_id,
+
                         'provider' => $message->provider?->name ?? 'AI',
+
+                        'status' => $message->status,
+
                         'content' => $message->content,
-                        'html' => $markdownRenderer->render($message->content),
+
+                        'error' => $message->error,
+
+                        'html' => $message->status === 'completed'
+                            ? $markdownRenderer->render($message->content)
+                            : null,
                     ];
                 })
                 ->values();
@@ -109,11 +180,161 @@ class MessageController extends Controller
                     'title' => $chat->title,
                 ],
 
+                'user_message_id' => $userMessage->id,
+
                 'messages' => $messages,
             ]);
         }
 
-        // Normal browser form submission
         return redirect()->route('chats.show', $chat);
+    }
+
+    public function retry(
+    Request $request,
+    Message $message,
+    AIManager $aiManager,
+    MarkdownRenderer $markdownRenderer
+    ) {
+        /*
+        |--------------------------------------------------------------------------
+        | 1. Make sure this is an AI message
+        |--------------------------------------------------------------------------
+        */
+
+        if ($message->role !== 'assistant') {
+            abort(422, 'Only AI messages can be retried.');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. Make sure the message belongs to the logged-in user
+        |--------------------------------------------------------------------------
+        */
+
+        if ($message->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 3. Load the user message that caused this AI response
+        |--------------------------------------------------------------------------
+        */
+
+        $message->load('parent');
+
+        $parentMessage = $message->parent;
+
+        if (!$parentMessage) {
+            abort(422, 'Parent user message not found.');
+        }
+        
+        /*
+        |--------------------------------------------------------------------------
+        | 4. Build conversation history
+        |--------------------------------------------------------------------------
+        */
+
+        $conversation = $message->chat
+            ->messages()
+            ->where('id', '<', $parentMessage->id)
+            ->orderBy('id')
+            ->get([
+                'role',
+                'content',
+                'provider_id',
+            ])
+            ->map(function ($item) {
+                return [
+                    'role' => $item->role === 'assistant'
+                        ? 'assistant'
+                        : 'user',
+
+                    'content' => $item->content,
+
+                    'provider_id' => $item->provider_id,
+                ];
+            })
+            ->values()
+            ->all();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Add the original user message as the final message
+        |--------------------------------------------------------------------------
+        */
+
+        $conversation[] = [
+            'role' => 'user',
+
+            'content' => $parentMessage->content,
+
+            'provider_id' => null,
+        ];
+
+        /*
+        |--------------------------------------------------------------------------
+        | 5. Retry ONLY this provider
+        |--------------------------------------------------------------------------
+        */
+
+        $response = $aiManager->sendToProvider(
+            (int) $message->provider_id,
+            $conversation
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 6. Update the existing AI message
+        |--------------------------------------------------------------------------
+        */
+
+        if ($response['success']) {
+            $message->update([
+                'status' => 'completed',
+                'content' => $response['content'],
+                'error' => null,
+            ]);
+        } else {
+            $message->update([
+                'status' => 'failed',
+                'content' => '',
+                'error' => $response['error'],
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 7. Return the updated message
+        |--------------------------------------------------------------------------
+        */
+
+        $message->load('provider');
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => $response['success'],
+
+                'message' => [
+                    'id' => $message->id,
+                    'role' => $message->role,
+                    'provider_id' => $message->provider_id,
+                    'provider' => $message->provider?->name ?? 'AI',
+
+                    'status' => $message->status,
+
+                    'content' => $message->content,
+
+                    'error' => $message->error,
+
+                    'html' => $message->status === 'completed'
+                        ? $markdownRenderer->render($message->content)
+                        : null,
+                ],
+            ]);
+        }
+
+        return redirect()->route('chats.show', $message->chat);
     }
 }

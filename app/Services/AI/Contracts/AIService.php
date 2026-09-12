@@ -4,7 +4,7 @@ namespace App\Services\AI\Contracts;
 
 interface AIService
 {
-    public function providerId(): int;
+    public function sendMessage(array $messages): string;
 
-    public function sendMessage(string $message): string;
+    public function providerId(): int;
 }

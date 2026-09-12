@@ -31,6 +31,9 @@ Route::middleware('auth')->group(function () {
 
     Route::delete('/profile', [ProfileController::class, 'destroy'])
         ->name('profile.destroy');
+
+    Route::post('/messages/{message}/retry', [MessageController::class, 'retry'])
+        ->name('messages.retry');
 });
 
 require __DIR__.'/auth.php';

@@ -27,21 +27,43 @@
                 </div>
 
             @else
-
+            
                 <div class="message-box ai-message">
-
+            
                     <h2 class="sender-name ai-name">
                         {{ $message->provider?->name ?? 'AI' }}
                     </h2>
-
+            
                     <div class="message-content">
-                    
-                        {!! $markdownRenderer->render($message->content) !!}
-                    
+            
+                        @if($message->status === 'failed')
+            
+                            <div class="message-error">
+            
+                                <p>
+                                    {{ $message->error ?? 'This provider is currently unavailable.' }}
+                                </p>
+            
+                                <button
+                                    type="button"
+                                    class="retry-btn"
+                                    data-message-id="{{ $message->id }}"
+                                >
+                                    Retry
+                                </button>
+            
+                            </div>
+            
+                        @else
+            
+                            {!! $markdownRenderer->render($message->content) !!}
+            
+                        @endif
+            
                     </div>
-
+            
                 </div>
-
+            
             @endif
 
         @empty
