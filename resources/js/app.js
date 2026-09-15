@@ -41,6 +41,8 @@ const stopIcon = `
     </svg>
 `;
 
+const textareaMaxHeight = 150;
+
 
 // ========================================
 // Helpers
@@ -92,7 +94,6 @@ document.addEventListener(
                 code.innerText
             );
 
-
             button.textContent =
                 'Copied!';
 
@@ -137,18 +138,15 @@ document.addEventListener(
                 '.chat-input-container'
             );
 
-
         const textarea =
             chatForm?.querySelector(
                 '.chat-input'
             );
 
-
         const submitButton =
             chatForm?.querySelector(
                 '.send-btn'
             );
-
 
         const messagesContainer =
             document.querySelector(
@@ -156,11 +154,9 @@ document.addEventListener(
             );
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Current AI request
-        |--------------------------------------------------------------------------
-        */
+        // ========================================
+        // Current AI Request
+        // ========================================
 
         let currentRequestController = null;
 
@@ -176,6 +172,78 @@ document.addEventListener(
 
 
         // ========================================
+        // Textarea Auto Resize
+        // ========================================
+
+        function autoResizeTextarea() {
+
+            textarea.style.height =
+                'auto';
+
+
+            const newHeight =
+                Math.min(
+                    textarea.scrollHeight,
+                    textareaMaxHeight
+                );
+
+
+            textarea.style.height =
+                `${newHeight}px`;
+
+
+            textarea.style.overflowY =
+                textarea.scrollHeight >
+                textareaMaxHeight
+                    ? 'auto'
+                    : 'hidden';
+        }
+
+
+        // ========================================
+        // Update Send Button
+        // ========================================
+
+        function updateSendButton() {
+
+            /*
+            |--------------------------------------------------------------------------
+            | During AI generation:
+            | The button is STOP, so keep it enabled.
+            |--------------------------------------------------------------------------
+            */
+
+            if (currentRequestController) {
+
+                submitButton.disabled =
+                    false;
+
+                return;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Normal state:
+            | Disable Send when textarea is empty.
+            |--------------------------------------------------------------------------
+            */
+
+            submitButton.disabled =
+                textarea.value.trim() === '';
+        }
+
+
+        // ========================================
+        // Initial Input State
+        // ========================================
+
+        autoResizeTextarea();
+
+        updateSendButton();
+
+
+        // ========================================
         // Submit / Stop
         // ========================================
 
@@ -188,7 +256,8 @@ document.addEventListener(
 
                 /*
                 |--------------------------------------------------------------------------
-                | If AI is generating, the same button becomes STOP
+                | If AI is generating:
+                | Same button = STOP
                 |--------------------------------------------------------------------------
                 */
 
@@ -220,9 +289,10 @@ document.addEventListener(
 
 
                 /*
-                | IMPORTANT:
-                | Do NOT disable submitButton.
-                | It is now our STOP button.
+                |--------------------------------------------------------------------------
+                | Keep button enabled because
+                | it is now the STOP button
+                |--------------------------------------------------------------------------
                 */
 
                 submitButton.disabled =
@@ -231,7 +301,7 @@ document.addEventListener(
 
                 /*
                 |--------------------------------------------------------------------------
-                | Change Send icon → Stop icon
+                | Create request controller
                 |--------------------------------------------------------------------------
                 */
 
@@ -239,9 +309,14 @@ document.addEventListener(
                     new AbortController();
 
 
+                /*
+                |--------------------------------------------------------------------------
+                | Send icon → Stop icon
+                |--------------------------------------------------------------------------
+                */
+
                 submitButton.innerHTML =
                     stopIcon;
-
 
                 submitButton.title =
                     'Stop generating';
@@ -260,20 +335,21 @@ document.addEventListener(
 
                 /*
                 |--------------------------------------------------------------------------
-                | Clear input
+                | Clear textarea
                 |--------------------------------------------------------------------------
                 */
 
                 textarea.value =
                     '';
 
+                autoResizeTextarea();
 
-                scrollToBottom();
+                updateSendButton();
 
 
                 /*
                 |--------------------------------------------------------------------------
-                | Show thinking
+                | Show thinking message
                 |--------------------------------------------------------------------------
                 */
 
@@ -325,7 +401,7 @@ document.addEventListener(
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Remove thinking
+                    | Remove thinking message
                     |--------------------------------------------------------------------------
                     */
 
@@ -501,13 +577,8 @@ document.addEventListener(
                     submitButton.innerHTML =
                         sendIcon;
 
-
                     submitButton.title =
                         'Send Message';
-
-
-                    submitButton.disabled =
-                        false;
 
 
                     /*
@@ -519,6 +590,10 @@ document.addEventListener(
                     textarea.disabled =
                         false;
 
+
+                    autoResizeTextarea();
+
+                    updateSendButton();
 
                     textarea.focus();
                 }
@@ -545,6 +620,21 @@ document.addEventListener(
                     chatForm.requestSubmit();
                 }
 
+            }
+        );
+
+
+        // ========================================
+        // Textarea Input
+        // ========================================
+
+        textarea.addEventListener(
+            'input',
+            () => {
+
+                autoResizeTextarea();
+
+                updateSendButton();
             }
         );
 
@@ -699,6 +789,7 @@ document.addEventListener(
                 );
 
             }
+
 
             /*
             |--------------------------------------------------------------------------
@@ -1342,7 +1433,9 @@ function addRegenerateButtonToExistingMessage(
 
 
     if (existingButton) {
-        existingButton.remove();
+        existingButton.closest(
+            '.message-actions'
+        )?.remove();
     }
 
 

@@ -334,16 +334,24 @@ label.icon-btn svg {
     background: transparent;
     font-size: 1rem;
     color: #ffffff;
-    padding: 0px 5px;
+    padding: 8px 5px;
     outline: none;
     resize: none;
     max-height: 150px;
+    overflow-y: hidden;
     font-family: inherit;
+    line-height: 1.5;
 }
 
 .send-btn {
     background-color: #0dabc7;
     color: white;
+}
+
+.send-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
 .send-btn:hover {
